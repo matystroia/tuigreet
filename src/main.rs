@@ -12,9 +12,6 @@ mod keyboard;
 mod power;
 mod ui;
 
-#[cfg(test)]
-mod integration;
-
 use std::{error::Error, fs::OpenOptions, io, process, sync::Arc};
 
 use crossterm::{
@@ -28,7 +25,6 @@ use tokio::sync::RwLock;
 use tracing_appender::non_blocking::WorkerGuard;
 use tui::{backend::CrosstermBackend, Terminal};
 
-#[cfg(not(test))]
 use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 
 pub use self::greeter::*;
@@ -57,15 +53,11 @@ where
 
   register_panic_handler();
 
-  #[cfg(not(test))]
-  {
-    enable_raw_mode()?;
-    execute!(io::stdout(), EnterAlternateScreen)?;
-  }
+  enable_raw_mode()?;
+  execute!(io::stdout(), EnterAlternateScreen)?;
 
   let mut terminal = Terminal::new(backend)?;
 
-  #[cfg(not(test))]
   terminal.clear()?;
 
   let ipc = Ipc::new();
@@ -136,7 +128,6 @@ async fn exit(greeter: &mut Greeter, status: AuthStatus) {
     AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(greeter).await,
   }
 
-  #[cfg(not(test))]
   clear_screen();
 
   let _ = execute!(io::stdout(), LeaveAlternateScreen);
@@ -149,7 +140,6 @@ fn register_panic_handler() {
   let hook = std::panic::take_hook();
 
   std::panic::set_hook(Box::new(move |info| {
-    #[cfg(not(test))]
     clear_screen();
 
     let _ = execute!(io::stdout(), LeaveAlternateScreen);
@@ -159,7 +149,6 @@ fn register_panic_handler() {
   }));
 }
 
-#[cfg(not(test))]
 pub fn clear_screen() {
   let backend = CrosstermBackend::new(io::stdout());
 

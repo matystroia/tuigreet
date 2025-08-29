@@ -7,7 +7,6 @@ use tokio::{
   sync::mpsc::{self, Sender},
 };
 
-#[cfg(not(test))]
 use crossterm::event::EventStream;
 
 use crate::AuthStatus;
@@ -34,13 +33,7 @@ impl Events {
       let tx = tx.clone();
 
       async move {
-        #[cfg(not(test))]
         let mut stream = EventStream::new();
-
-        // In tests, we are not capturing events from the terminal, so we need
-        // to replace the crossterm::EventStream with a dummy pending stream.
-        #[cfg(test)]
-        let mut stream = futures::stream::pending::<Result<TermEvent, ()>>();
 
         let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / FRAME_RATE));
 
