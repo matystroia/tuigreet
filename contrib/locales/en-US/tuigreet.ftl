@@ -1,12 +1,11 @@
-title_authenticate = Authenticate into {$hostname}
-title_command = Change session command
-title_power = Power options
-title_session = Change session
-title_users = Select a user
+title_authenticate = {$hostname} login
+title_command = Command
+title_power = Power
+title_session = Session
+title_users = User
 
-action_reset = Reset
-action_command = Change command
-action_session = Choose session
+action_command = Command
+action_session = Session
 action_power = Power
 
 date = %a, %d %h %Y - %H:%M
@@ -14,17 +13,15 @@ date = %a, %d %h %Y - %H:%M
 select_user = Press Enter to select a user or start typing...
 username = Username:
 wait = Please wait...
-failed = Authentication failed, please try again.
+failed = Authentication failed
 
-new_command = New command:
-
-shutdown = Shut down
+shutdown = Power off
 reboot = Reboot
 
 command_missing = No command configured
 command_exited = Command exited with
 command_failed = Command failed
 
-status_command = CMD
-status_session = SESS
+status_command = COMMAND
+status_session = SESSION
 status_caps = CAPS LOCK

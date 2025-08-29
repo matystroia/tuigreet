@@ -77,7 +77,13 @@ where
       f.render_widget(time, chunks[TITLEBAR_INDEX]);
     }
 
-    let status_block_size_right = 1 + greeter.window_padding() + fl!("status_caps").chars().count() as u16;
+    let session_source_label = match greeter.session_source {
+      SessionSource::Session(_) => fl!("status_session"),
+      _ => fl!("status_command"),
+    };
+    let session_source = greeter.session_source.label(&greeter).unwrap_or("-");
+
+    let status_block_size_right = session_source_label.chars().count() as u16 + 1 + session_source.chars().count() as u16 + 1 + fl!("status_caps").chars().count() as u16 + greeter.window_padding();
     let status_block_size_left = (size.width - greeter.window_padding()) - status_block_size_right;
 
     let status_chunks = Layout::default()
@@ -93,17 +99,7 @@ where
       )
       .split(chunks[STATUSBAR_INDEX]);
 
-    let session_source_label = match greeter.session_source {
-      SessionSource::Session(_) => fl!("status_session"),
-      _ => fl!("status_command"),
-    };
-
-    let session_source = greeter.session_source.label(&greeter).unwrap_or("-");
-
     let status_left_text = Line::from(vec![
-      status_label(theme, "ESC"),
-      status_value(&greeter, theme, Button::Other, fl!("action_reset")),
-      Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_command)),
       status_value(&greeter, theme, Button::Command, fl!("action_command")),
       Span::from(" "),
@@ -112,20 +108,20 @@ where
       Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_power)),
       status_value(&greeter, theme, Button::Power, fl!("action_power")),
-      Span::from(" "),
-      status_label(theme, session_source_label),
-      status_value(&greeter, theme, Button::Other, session_source),
     ]);
     let status_left = Paragraph::new(status_left_text);
 
     f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
-    if capslock_status() {
-      let status_right_text = status_label(theme, fl!("status_caps"));
-      let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
+    let status_right_text = Line::from(
+      vec![status_label(theme, session_source_label), status_value(&greeter, theme, Button::Other, session_source), Span::from(" ")]
+        .into_iter()
+        .chain(capslock_status().then(|| status_label(theme, fl!("status_caps"))))
+        .collect::<Vec<_>>(),
+    );
+    let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
 
-      f.render_widget(status_right, status_chunks[STATUSBAR_RIGHT_INDEX]);
-    }
+    f.render_widget(status_right, status_chunks[STATUSBAR_RIGHT_INDEX]);
 
     let cursor = match greeter.mode {
       Mode::Command => self::command::draw(&mut greeter, f).ok(),

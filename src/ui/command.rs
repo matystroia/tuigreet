@@ -6,11 +6,7 @@ use tui::{
   widgets::{Block, BorderType, Borders, Paragraph},
 };
 
-use crate::{
-  ui::util::*,
-  ui::{prompt_value, Frame},
-  Greeter,
-};
+use crate::{ui::util::*, ui::Frame, Greeter};
 
 use super::common::style::Themed;
 
@@ -42,24 +38,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
   let cursor = chunks[0];
 
-  let command_label_text = prompt_value(theme, Some(fl!("new_command")));
-  let command_label = Paragraph::new(command_label_text).style(theme.of(&[Themed::Prompt]));
   let command_value_text = Span::from(&greeter.buffer);
   let command_value = Paragraph::new(command_value_text).style(theme.of(&[Themed::Input]));
 
-  f.render_widget(command_label, chunks[0]);
-  f.render_widget(
-    command_value,
-    Rect::new(
-      1 + chunks[0].x + fl!("new_command").chars().count() as u16,
-      chunks[0].y,
-      get_input_width(greeter, width, &Some(fl!("new_command"))),
-      1,
-    ),
-  );
+  f.render_widget(command_value, Rect::new(1 + chunks[0].x, chunks[0].y, get_input_width(greeter, width, &None), 1));
 
   let new_command = greeter.buffer.clone();
   let offset = get_cursor_offset(greeter, new_command.chars().count());
 
-  Ok((2 + cursor.x + fl!("new_command").chars().count() as u16 + offset as u16, cursor.y + 1))
+  Ok((2 + cursor.x + offset as u16, cursor.y + 1))
 }
