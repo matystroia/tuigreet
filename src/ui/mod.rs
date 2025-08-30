@@ -53,6 +53,7 @@ where
   let mut greeter = greeter.write().await;
   let hide_cursor = should_hide_cursor(&greeter);
 
+  terminal.clear().ok();
   terminal.draw(|f| {
     let theme = &greeter.theme;
 
@@ -105,6 +106,9 @@ where
       Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_sessions)),
       status_value(&greeter, theme, Button::Session, fl!("action_session")),
+      Span::from(" "),
+      status_label(theme, format!("F{}", greeter.kb_fortune)),
+      status_value(&greeter, theme, Button::Command, "Fortune"),
       Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_power)),
       status_value(&greeter, theme, Button::Power, fl!("action_power")),

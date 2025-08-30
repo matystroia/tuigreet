@@ -5,6 +5,7 @@ use greetd_ipc::Request;
 use tokio::sync::RwLock;
 
 use crate::{
+  fortune::get_fortune,
   info::{delete_last_command, delete_last_session, get_last_user_command, get_last_user_session, write_last_command, write_last_session_path},
   ipc::Ipc,
   power::power,
@@ -107,6 +108,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
 
       greeter.mode = Mode::Sessions;
     }
+
+    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_fortune => greeter.fortune = get_fortune(),
 
     // F12 will display the user selection menu. If we are already in one of the
     // popup screens, we set the previous screen as being the current previous

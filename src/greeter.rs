@@ -177,6 +177,8 @@ pub struct Greeter {
   pub kb_command: u8,
   #[default(3)]
   pub kb_sessions: u8,
+  #[default(6)]
+  pub kb_fortune: u8,
   #[default(12)]
   pub kb_power: u8,
 
@@ -449,6 +451,7 @@ impl Greeter {
 
     opts.optopt("", "kb-command", "F-key to use to open the command menu", "[1-12]");
     opts.optopt("", "kb-sessions", "F-key to use to open the sessions menu", "[1-12]");
+    opts.optopt("", "kb-fortune", "F-key to use to change fortune", "[1-12]");
     opts.optopt("", "kb-power", "F-key to use to open the power menu", "[1-12]");
 
     opts
@@ -603,6 +606,7 @@ impl Greeter {
 
     self.kb_command = self.config().opt_str("kb-command").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(2);
     self.kb_sessions = self.config().opt_str("kb-sessions").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(3);
+    self.kb_fortune = self.config().opt_str("kb-fortune").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(6);
     self.kb_power = self.config().opt_str("kb-power").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(12);
 
     if self.kb_command == self.kb_sessions || self.kb_sessions == self.kb_power || self.kb_power == self.kb_command {

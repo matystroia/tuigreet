@@ -99,15 +99,14 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   offset
 }
 
-pub fn get_greeting_height(greeter: &Greeter, padding: u16) -> (Paragraph, u16) {
+pub fn get_greeting_height(greeter: &Greeter) -> (Paragraph, u16) {
   let fortune_text = match greeter.fortune.into_text() {
     Ok(text) => text,
     Err(_) => Text::raw(&greeter.fortune),
   };
   let paragraph = Paragraph::new(fortune_text);
 
-  let width = greeter.width();
-  let height = paragraph.line_count(width - (2 * padding));
+  let height = paragraph.line_count(greeter.width());
 
   (paragraph, height as u16)
 }

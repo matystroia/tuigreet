@@ -50,7 +50,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(prompt_rect);
   let (username_rect, answer_rect) = (chunks[0], chunks[2]);
 
-  let (greeting, greeting_height) = get_greeting_height(greeter, 0);
+  let (greeting, greeting_height) = get_greeting_height(greeter);
   let greeting_label = greeting.alignment(Alignment::Center).style(theme.of(&[Themed::Greet]));
   let greeting_rect = Rect::new(0, prompt_rect.y - greeting_height - 3, size.width, greeting_height);
 
