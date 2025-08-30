@@ -42,22 +42,16 @@ pub fn should_hide_cursor(greeter: &Greeter) -> bool {
 // |                        | <- container padding
 // +------------------------+
 pub fn get_height(greeter: &Greeter) -> u16 {
-  let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
 
-  let initial = match greeter.mode {
+  match greeter.mode {
     Mode::Username | Mode::Action | Mode::Command => (2 * container_padding) + 1,
     Mode::Password => match greeter.prompt {
       Some(_) => (2 * container_padding) + prompt_padding + 2,
       None => (2 * container_padding) + 1,
     },
     Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => 2 * container_padding,
-  };
-
-  match greeter.mode {
-    Mode::Command | Mode::Sessions | Mode::Power | Mode::Processing => initial,
-    _ => initial + greeting_height,
   }
 }
 
@@ -114,7 +108,7 @@ pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (O
       Err(_) => Text::raw(greeting),
     };
 
-    let paragraph = Paragraph::new(text.clone()).wrap(Wrap { trim: false });
+    let paragraph = Paragraph::new(text.clone());
     let height = paragraph.line_count(width - (2 * padding)) + 1;
 
     (Some(paragraph), height as u16)

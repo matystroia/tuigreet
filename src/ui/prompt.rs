@@ -10,14 +10,10 @@ use tui::{
 use crate::{
   info::{get_hostname, get_tty},
   ui::{prompt_value, util::*, Frame},
-  GreetAlign, Greeter, Mode, SecretDisplay,
+  Greeter, Mode, SecretDisplay,
 };
 
 use super::common::style::Themed;
-
-const GREETING_INDEX: usize = 0;
-const USERNAME_INDEX: usize = 1;
-const ANSWER_INDEX: usize = 3;
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let theme = &greeter.theme;
@@ -27,17 +23,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
-  let greeting_alignment = match greeter.greet_align() {
-    GreetAlign::Center => Alignment::Center,
-    GreetAlign::Left => Alignment::Left,
-    GreetAlign::Right => Alignment::Right,
-  };
 
-  let container = Rect::new(x, y, width, height);
-  let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
+  let prompt_container = Rect::new(x, y, width, height);
+  let prompt_rect = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
 
   let hostname = Span::from(titleize(&fl!("title_authenticate", hostname = get_hostname(), tty = get_tty())));
-  let block = Block::default()
+
+  let prompt_block = Block::default()
     .title(hostname)
     .title_style(theme.of(&[Themed::Title]))
     .style(theme.of(&[Themed::Container]))
@@ -45,27 +37,26 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     .border_type(BorderType::Plain)
     .border_style(theme.of(&[Themed::Border]));
 
-  f.render_widget(block, container);
-
-  let (message, message_height) = get_message_height(greeter, container_padding, 1);
-  let (greeting, greeting_height) = get_greeting_height(greeter, container_padding, 0);
+  f.render_widget(prompt_block, prompt_container);
 
   let should_display_answer = greeter.mode == Mode::Password;
 
   let constraints = [
-    Constraint::Length(greeting_height),                                        // Greeting
     Constraint::Length(1),                                                      // Username
     Constraint::Length(if should_display_answer { prompt_padding } else { 0 }), // Prompt padding
     Constraint::Length(if should_display_answer { 1 } else { 0 }),              // Answer
   ];
 
-  let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
-  let cursor = chunks[USERNAME_INDEX];
+  let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(prompt_rect);
+  let (username_rect, answer_rect) = (chunks[0], chunks[2]);
+
+  let (greeting, greeting_height) = get_greeting_height(greeter, 0, 0);
+  let greeting_rect = Rect::new(0, prompt_rect.y - greeting_height - 2, size.width, greeting_height);
 
   if let Some(greeting) = greeting {
-    let greeting_label = greeting.alignment(greeting_alignment).style(theme.of(&[Themed::Greet]));
+    let greeting_label = greeting.alignment(Alignment::Center).style(theme.of(&[Themed::Greet]));
 
-    f.render_widget(greeting_label, chunks[GREETING_INDEX]);
+    f.render_widget(greeting_label, greeting_rect);
   }
 
   let username_label = if greeter.user_menu && greeter.username.value.is_empty() {
@@ -84,14 +75,14 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   match greeter.mode {
     Mode::Username | Mode::Password | Mode::Action => {
-      f.render_widget(username_label, chunks[USERNAME_INDEX]);
+      f.render_widget(username_label, username_rect);
 
       if !greeter.user_menu || !greeter.username.value.is_empty() {
         f.render_widget(
           username_value,
           Rect::new(
-            1 + chunks[USERNAME_INDEX].x + fl!("username").chars().count() as u16,
-            chunks[USERNAME_INDEX].y,
+            1 + username_rect.x + fl!("username").chars().count() as u16,
+            username_rect.y,
             get_input_width(greeter, width, &Some(fl!("username"))),
             1,
           ),
@@ -103,7 +94,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let answer_label = Paragraph::new(answer_text);
 
       if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
-        f.render_widget(answer_label, chunks[ANSWER_INDEX]);
+        f.render_widget(answer_label, answer_rect);
 
         if !greeter.asking_for_secret || greeter.secret_display.show() {
           let value = match (greeter.asking_for_secret, &greeter.secret_display) {
@@ -125,20 +116,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
           f.render_widget(
             answer_value,
-            Rect::new(
-              chunks[ANSWER_INDEX].x + greeter.prompt_width() as u16,
-              chunks[ANSWER_INDEX].y,
-              get_input_width(greeter, width, &greeter.prompt),
-              1,
-            ),
+            Rect::new(answer_rect.x + greeter.prompt_width() as u16, answer_rect.y, get_input_width(greeter, width, &greeter.prompt), 1),
           );
         }
       }
 
-      if let Some(message) = message {
+      if let (Some(message), message_height) = get_message_height(greeter, container_padding, 1) {
         let message = message.alignment(Alignment::Center);
-
-        f.render_widget(message, Rect::new(x, y + height, width, message_height));
+        let message_rect = Rect::new(x, y + height, width, message_height);
+        f.render_widget(message, message_rect);
       }
     }
 
@@ -150,7 +136,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let username_length = greeter.username.get().chars().count();
       let offset = get_cursor_offset(greeter, username_length);
 
-      Ok((2 + cursor.x + fl!("username").chars().count() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
+      Ok((2 + username_rect.x + fl!("username").chars().count() as u16 + offset as u16, 1 + username_rect.y))
     }
 
     Mode::Password => {
@@ -158,9 +144,9 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let offset = get_cursor_offset(greeter, answer_length);
 
       if greeter.asking_for_secret && !greeter.secret_display.show() {
-        Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y - 1))
+        Ok((1 + username_rect.x + greeter.prompt_width() as u16, 2 + prompt_padding + username_rect.y))
       } else {
-        Ok((1 + cursor.x + greeter.prompt_width() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y - 1))
+        Ok((1 + username_rect.x + greeter.prompt_width() as u16 + offset as u16, 2 + prompt_padding + username_rect.y))
       }
     }
 
