@@ -8,7 +8,7 @@ use tui::{
 };
 
 use crate::{
-  info::get_hostname,
+  info::{get_hostname, get_tty},
   ui::{prompt_value, util::*, Frame},
   GreetAlign, Greeter, Mode, SecretDisplay,
 };
@@ -36,7 +36,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
 
-  let hostname = Span::from(titleize(&fl!("title_authenticate", hostname = get_hostname())));
+  let hostname = Span::from(titleize(&fl!("title_authenticate", hostname = get_hostname(), tty = get_tty())));
   let block = Block::default()
     .title(hostname)
     .title_style(theme.of(&[Themed::Title]))

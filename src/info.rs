@@ -50,6 +50,13 @@ pub fn get_hostname() -> String {
   }
 }
 
+pub fn get_tty() -> String {
+  match fs::read_link("/proc/self/fd/0") {
+    Ok(path) => path.file_name().and_then(|name| name.to_str()).unwrap_or("").to_string(),
+    _ => String::new(),
+  }
+}
+
 pub fn get_issue() -> Option<String> {
   let (date, time) = {
     let now = Local::now();

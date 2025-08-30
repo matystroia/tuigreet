@@ -1,4 +1,4 @@
-title_authenticate = {$hostname} login
+title_authenticate = {$hostname}/{$tty}
 title_command = Command
 title_power = Power
 title_session = Session
