@@ -1,5 +1,3 @@
-use std::process::Command;
-
 use ansi_to_tui::IntoText;
 use tui::{
   prelude::Rect,
@@ -101,20 +99,10 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   offset
 }
 
-pub fn get_fortune() -> String {
-  let output = Command::new("fortune").arg("-a").output();
-  match output {
-    Ok(result) if result.status.success() => String::from_utf8_lossy(&result.stdout).into_owned(),
-    _ => String::from("Sorry folks, no fortune at the moment!\n--- Fortune writer"),
-  }
-}
-
 pub fn get_greeting_height(greeter: &Greeter, padding: u16) -> (Paragraph, u16) {
-  let fortune = get_fortune();
-
-  let fortune_text = match fortune.into_text() {
+  let fortune_text = match greeter.fortune.into_text() {
     Ok(text) => text,
-    Err(_) => Text::raw(fortune),
+    Err(_) => Text::raw(&greeter.fortune),
   };
   let paragraph = Paragraph::new(fortune_text);
 

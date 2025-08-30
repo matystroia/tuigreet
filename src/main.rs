@@ -5,6 +5,7 @@ extern crate smart_default;
 mod macros;
 
 mod event;
+mod fortune;
 mod greeter;
 mod info;
 mod ipc;
@@ -26,6 +27,8 @@ use tracing_appender::non_blocking::WorkerGuard;
 use tui::{backend::CrosstermBackend, Terminal};
 
 use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
+
+use crate::fortune::get_fortune;
 
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
@@ -59,6 +62,8 @@ where
   let mut terminal = Terminal::new(backend)?;
 
   terminal.clear()?;
+
+  greeter.fortune = get_fortune();
 
   let ipc = Ipc::new();
 

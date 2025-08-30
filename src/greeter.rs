@@ -180,6 +180,8 @@ pub struct Greeter {
   #[default(12)]
   pub kb_power: u8,
 
+  pub fortune: String,
+
   // The software is waiting for a response from `greetd`.
   pub working: bool,
   // We are done working.

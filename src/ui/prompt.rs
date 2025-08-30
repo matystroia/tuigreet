@@ -52,7 +52,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   let (greeting, greeting_height) = get_greeting_height(greeter, 0);
   let greeting_label = greeting.alignment(Alignment::Center).style(theme.of(&[Themed::Greet]));
-  let greeting_rect = Rect::new(0, prompt_rect.y - greeting_height - 2, size.width, greeting_height);
+  let greeting_rect = Rect::new(0, prompt_rect.y - greeting_height - 3, size.width, greeting_height);
 
   f.render_widget(greeting_label, greeting_rect);
 
