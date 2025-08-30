@@ -61,11 +61,27 @@ pub fn get_rect_bounds(greeter: &Greeter, area: Rect, items: usize) -> (u16, u16
   let width = greeter.width();
   let height: u16 = get_height(greeter) + items as u16;
 
-  let x = if width < area.width { (area.width - width) / 2 } else { 0 };
-  let y = if height < area.height { (area.height - height) / 2 } else { 0 };
+  let x = if width < area.width {
+    (area.width - width) / 2
+  } else {
+    0
+  };
+  let y = if height < area.height {
+    (area.height - height) / 2
+  } else {
+    0
+  };
 
-  let (x, width) = if (x + width) >= area.width { (0, area.width) } else { (x, width) };
-  let (y, height) = if (y + height) >= area.height { (0, area.height) } else { (y, height) };
+  let (x, width) = if (x + width) >= area.width {
+    (0, area.width)
+  } else {
+    (x, width)
+  };
+  let (y, height) = if (y + height) >= area.height {
+    (0, area.height)
+  } else {
+    (y, height)
+  };
 
   (x, y, width, height)
 }
@@ -99,19 +115,26 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   offset
 }
 
-pub fn get_greeting_height(greeter: &Greeter) -> (Paragraph, u16) {
+pub fn get_greeting(greeter: &Greeter, area: Rect) -> Paragraph {
   let fortune_text = match greeter.fortune.into_text() {
     Ok(text) => text,
     Err(_) => Text::raw(&greeter.fortune),
   };
-  let paragraph = Paragraph::new(fortune_text);
 
-  let height = paragraph.line_count(greeter.width());
+  let mut paragraph = Paragraph::new(fortune_text).wrap(Wrap { trim: false });
 
-  (paragraph, height as u16)
+  if paragraph.line_count(120) as u16 > area.height {
+    paragraph = Paragraph::new(Text::raw("Fortune too long, unfortunately"));
+  }
+
+  paragraph
 }
 
-pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
+pub fn get_message_height(
+  greeter: &Greeter,
+  padding: u16,
+  fallback: u16,
+) -> (Option<Paragraph>, u16) {
   if let Some(message) = &greeter.message {
     let width = greeter.width();
     let paragraph = Paragraph::new(message.trim_end()).wrap(Wrap { trim: true });

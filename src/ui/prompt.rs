@@ -25,9 +25,18 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let prompt_padding = greeter.prompt_padding();
 
   let prompt_container = Rect::new(x, y, width, height);
-  let prompt_rect = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
+  let prompt_rect = Rect::new(
+    x + container_padding,
+    y + container_padding,
+    width - (2 * container_padding),
+    height - (2 * container_padding),
+  );
 
-  let hostname = Span::from(titleize(&fl!("title_authenticate", hostname = get_hostname(), tty = get_tty())));
+  let hostname = Span::from(titleize(&fl!(
+    "title_authenticate",
+    hostname = get_hostname(),
+    tty = get_tty()
+  )));
 
   let prompt_block = Block::default()
     .title(hostname)
@@ -47,14 +56,37 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     Constraint::Length(if should_display_answer { 1 } else { 0 }),              // Answer
   ];
 
-  let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(prompt_rect);
+  let chunks = Layout::default()
+    .direction(Direction::Vertical)
+    .constraints(constraints.as_ref())
+    .split(prompt_rect);
   let (username_rect, answer_rect) = (chunks[0], chunks[2]);
 
-  let (greeting, greeting_height) = get_greeting_height(greeter);
-  let greeting_label = greeting.alignment(Alignment::Center).style(theme.of(&[Themed::Greet]));
-  let greeting_rect = Rect::new(0, prompt_rect.y - greeting_height - 3, size.width, greeting_height);
+  // Everything above prompt
+  let greeting_rect = Rect::new(
+    greeter.window_padding(),
+    greeter.window_padding() + 2,
+    size.width - greeter.window_padding() * 2,
+    prompt_container.y - greeter.window_padding(),
+  );
 
-  f.render_widget(greeting_label, greeting_rect);
+  let greeting = get_greeting(greeter, greeting_rect).style(theme.of(&[Themed::Greet]));
+  let greeting_width = greeting.line_width().min(120) as u16;
+  let greeting_height = greeting.line_count(120) as u16;
+
+  // Align just above prompt
+  let [_, greeting_rect] =
+    Layout::vertical(vec![Constraint::Fill(1), Constraint::Length(greeting_height)]).areas(greeting_rect);
+
+  // Align to middle
+  let [_, greeting_rect, _] = Layout::horizontal(vec![
+    Constraint::Fill(1),
+    Constraint::Length(greeting_width),
+    Constraint::Fill(1),
+  ])
+  .areas(greeting_rect);
+
+  f.render_widget(greeting, greeting_rect);
 
   let username_label = if greeter.user_menu && greeter.username.value.is_empty() {
     let prompt_text = Span::from(fl!("select_user"));
@@ -86,7 +118,11 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
         );
       }
 
-      let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(theme, greeter.prompt.as_ref()) };
+      let answer_text = if greeter.working {
+        Span::from(fl!("wait"))
+      } else {
+        prompt_value(theme, greeter.prompt.as_ref())
+      };
 
       let answer_label = Paragraph::new(answer_text);
 
@@ -101,7 +137,11 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
               } else {
                 let mut rng = StdRng::seed_from_u64(0);
 
-                greeter.buffer.chars().map(|_| pool.chars().nth(rng.gen_range(0..pool.chars().count())).unwrap()).collect()
+                greeter
+                  .buffer
+                  .chars()
+                  .map(|_| pool.chars().nth(rng.gen_range(0..pool.chars().count())).unwrap())
+                  .collect()
               }
             }
 
@@ -113,7 +153,12 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
           f.render_widget(
             answer_value,
-            Rect::new(answer_rect.x + greeter.prompt_width() as u16, answer_rect.y, get_input_width(greeter, width, &greeter.prompt), 1),
+            Rect::new(
+              answer_rect.x + greeter.prompt_width() as u16,
+              answer_rect.y,
+              get_input_width(greeter, width, &greeter.prompt),
+              1,
+            ),
           );
         }
       }
@@ -133,7 +178,10 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let username_length = greeter.username.get().chars().count();
       let offset = get_cursor_offset(greeter, username_length);
 
-      Ok((2 + username_rect.x + fl!("username").chars().count() as u16 + offset as u16, 1 + username_rect.y))
+      Ok((
+        2 + username_rect.x + fl!("username").chars().count() as u16 + offset as u16,
+        1 + username_rect.y,
+      ))
     }
 
     Mode::Password => {
@@ -141,9 +189,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let offset = get_cursor_offset(greeter, answer_length);
 
       if greeter.asking_for_secret && !greeter.secret_display.show() {
-        Ok((1 + username_rect.x + greeter.prompt_width() as u16, 2 + prompt_padding + username_rect.y))
+        Ok((
+          1 + username_rect.x + greeter.prompt_width() as u16,
+          2 + prompt_padding + username_rect.y,
+        ))
       } else {
-        Ok((1 + username_rect.x + greeter.prompt_width() as u16 + offset as u16, 2 + prompt_padding + username_rect.y))
+        Ok((
+          1 + username_rect.x + greeter.prompt_width() as u16 + offset as u16,
+          2 + prompt_padding + username_rect.y,
+        ))
       }
     }
 
