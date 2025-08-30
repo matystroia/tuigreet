@@ -1,3 +1,5 @@
+use std::process::Command;
+
 use ansi_to_tui::IntoText;
 use tui::{
   prelude::Rect,
@@ -99,22 +101,27 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   offset
 }
 
-pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
-  if let Some(greeting) = &greeter.greeting {
-    let width = greeter.width();
-
-    let text = match greeting.clone().trim().into_text() {
-      Ok(text) => text,
-      Err(_) => Text::raw(greeting),
-    };
-
-    let paragraph = Paragraph::new(text.clone());
-    let height = paragraph.line_count(width - (2 * padding)) + 1;
-
-    (Some(paragraph), height as u16)
-  } else {
-    (None, fallback)
+pub fn get_fortune() -> String {
+  let output = Command::new("fortune").arg("-a").output();
+  match output {
+    Ok(result) if result.status.success() => String::from_utf8_lossy(&result.stdout).into_owned(),
+    _ => String::from("Sorry folks, no fortune at the moment!\n--- Fortune writer"),
   }
+}
+
+pub fn get_greeting_height(greeter: &Greeter, padding: u16) -> (Paragraph, u16) {
+  let fortune = get_fortune();
+
+  let fortune_text = match fortune.into_text() {
+    Ok(text) => text,
+    Err(_) => Text::raw(fortune),
+  };
+  let paragraph = Paragraph::new(fortune_text);
+
+  let width = greeter.width();
+  let height = paragraph.line_count(width - (2 * padding));
+
+  (paragraph, height as u16)
 }
 
 pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
