@@ -180,6 +180,8 @@ pub struct Greeter {
 
   pub fortune: String,
 
+  pub clear_request: bool,
+
   // The software is waiting for a response from `greetd`.
   pub working: bool,
   // We are done working.
@@ -314,10 +316,10 @@ impl Greeter {
   // Reset the software to its initial state.
   pub async fn reset(&mut self, soft: bool) {
     if soft {
-      self.mode = Mode::Password;
+      self.set_mode(Mode::Password);
       self.previous_mode = Mode::Password;
     } else {
-      self.mode = Mode::Username;
+      self.set_mode(Mode::Username);
       self.previous_mode = Mode::Username;
     }
 
@@ -415,6 +417,13 @@ impl Greeter {
 
     if let Some(locale) = locale {
       self.locale = locale;
+    }
+  }
+
+  pub fn set_mode(&mut self, mode: Mode) {
+    if mode != self.mode {
+      self.mode = mode;
+      self.clear_request = true;
     }
   }
 

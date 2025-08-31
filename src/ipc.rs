@@ -84,14 +84,14 @@ impl Ipc {
         auth_message,
       } => match auth_message_type {
         AuthMessageType::Secret => {
-          greeter.mode = Mode::Password;
+          greeter.set_mode(Mode::Password);
           greeter.working = false;
           greeter.asking_for_secret = true;
           greeter.set_prompt(&auth_message);
         }
 
         AuthMessageType::Visible => {
-          greeter.mode = Mode::Password;
+          greeter.set_mode(Mode::Password);
           greeter.working = false;
           greeter.asking_for_secret = false;
           greeter.set_prompt(&auth_message);
@@ -107,7 +107,7 @@ impl Ipc {
           greeter.remove_prompt();
 
           greeter.previous_mode = greeter.mode;
-          greeter.mode = Mode::Action;
+          greeter.set_mode(Mode::Action);
 
           if let Some(message) = &mut greeter.message {
             message.push('\n');
@@ -179,7 +179,7 @@ impl Ipc {
 
             Some(command) => {
               greeter.done = true;
-              greeter.mode = Mode::Processing;
+              greeter.set_mode(Mode::Processing);
 
               let session = Session::get_selected(greeter);
               let default = DefaultCommand(&command, greeter.session_source.env());
@@ -261,7 +261,11 @@ impl<'a> DefaultCommand<'a> {
   }
 }
 
-fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, default: &'a DefaultCommand<'a>) -> (Cow<'a, str>, Vec<String>) {
+fn wrap_session_command<'a>(
+  greeter: &Greeter,
+  session: Option<&Session>,
+  default: &'a DefaultCommand<'a>,
+) -> (Cow<'a, str>, Vec<String>) {
   let mut env: Vec<String> = vec![];
 
   match session {
@@ -281,7 +285,10 @@ fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, defaul
         env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
       }
       if let Some(xdg_desktop_names) = xdg_desktop_names {
-        env.push(format!("XDG_CURRENT_DESKTOP={}", desktop_names_to_xdg(xdg_desktop_names)));
+        env.push(format!(
+          "XDG_CURRENT_DESKTOP={}",
+          desktop_names_to_xdg(xdg_desktop_names)
+        ));
       }
 
       if *session_type == SessionType::X11 {

@@ -50,7 +50,11 @@ where
   let mut greeter = greeter.write().await;
   let hide_cursor = should_hide_cursor(&greeter);
 
-  terminal.clear().ok();
+  if greeter.clear_request {
+    terminal.clear().ok();
+    greeter.clear_request = false;
+  }
+
   terminal.draw(|f| {
     let theme = &greeter.theme;
 

@@ -65,13 +65,15 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // session.
     KeyEvent { code: KeyCode::Esc, .. } => match greeter.mode {
       Mode::Command => {
-        greeter.mode = greeter.previous_mode;
+        let previous_mode = greeter.previous_mode;
+        greeter.set_mode(previous_mode);
         greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
         greeter.cursor_offset = 0;
       }
 
       Mode::Users | Mode::Sessions | Mode::Power => {
-        greeter.mode = greeter.previous_mode;
+        let previous_mode = greeter.previous_mode;
+        greeter.set_mode(previous_mode);
       }
 
       _ => {
@@ -81,8 +83,12 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     },
 
     // Simple cursor directions in text fields.
-    KeyEvent { code: KeyCode::Left, .. } => greeter.cursor_offset -= 1,
-    KeyEvent { code: KeyCode::Right, .. } => greeter.cursor_offset += 1,
+    KeyEvent {
+      code: KeyCode::Left, ..
+    } => greeter.cursor_offset -= 1,
+    KeyEvent {
+      code: KeyCode::Right, ..
+    } => greeter.cursor_offset += 1,
 
     // F2 will display the command entry prompt. If we are already in one of the
     // popup screens, we set the previous screen as being the current previous
@@ -103,7 +109,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         .map(str::to_string)
         .unwrap_or_default();
       greeter.cursor_offset = 0;
-      greeter.mode = Mode::Command;
+      greeter.set_mode(Mode::Command);
     }
 
     // F3 will display the session selection menu. If we are already in one of
@@ -117,7 +123,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         _ => greeter.mode,
       };
 
-      greeter.mode = Mode::Sessions;
+      greeter.set_mode(Mode::Sessions);
     }
 
     KeyEvent {
@@ -138,7 +144,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         _ => greeter.mode,
       };
 
-      greeter.mode = Mode::Power;
+      greeter.set_mode(Mode::Power);
     }
 
     // Handle moving up in menus.
@@ -231,7 +237,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         };
 
         greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
-        greeter.mode = Mode::Users;
+        greeter.set_mode(Mode::Users);
       }
 
       Mode::Username => {}
@@ -259,7 +265,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         }
 
         greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
-        greeter.mode = greeter.previous_mode;
+        let previous_mode = greeter.previous_mode;
+        greeter.set_mode(previous_mode);
       }
 
       Mode::Users => {
@@ -269,7 +276,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
           greeter.username = MaskedString::from(username, name);
         }
 
-        greeter.mode = greeter.previous_mode;
+        let previous_mode = greeter.previous_mode;
+        greeter.set_mode(previous_mode);
 
         validate_username(&mut greeter, &ipc).await;
       }
@@ -288,7 +296,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
           greeter.session_source = SessionSource::Session(greeter.sessions.selected);
         }
 
-        greeter.mode = greeter.previous_mode;
+        let previous_mode = greeter.previous_mode;
+        greeter.set_mode(previous_mode);
       }
 
       Mode::Power => {
@@ -298,7 +307,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
           power(&mut greeter, command.action).await;
         }
 
-        greeter.mode = greeter.previous_mode;
+        let previous_mode = greeter.previous_mode;
+        greeter.set_mode(previous_mode);
       }
 
       _ => {}

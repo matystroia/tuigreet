@@ -70,7 +70,7 @@ pub enum PowerPostAction {
 pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) -> PowerPostAction {
   tracing::info!("executing power command: {:?}", command);
 
-  greeter.write().await.mode = Mode::Processing;
+  greeter.write().await.set_mode(Mode::Processing);
 
   let message = match command.output().await {
     Ok(result) => match (result.status, result.stderr) {
@@ -95,7 +95,7 @@ pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) -> PowerP
   if message.is_none() {
     PowerPostAction::ClearScreen
   } else {
-    greeter.mode = mode;
+    greeter.set_mode(mode);
     greeter.message = message;
 
     PowerPostAction::Noop

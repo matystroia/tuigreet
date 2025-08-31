@@ -64,6 +64,7 @@ where
   terminal.clear()?;
 
   greeter.fortune = get_fortune();
+  greeter.clear_request = false;
 
   let ipc = Ipc::new();
 
