@@ -15,7 +15,9 @@ pub async fn power(greeter: &mut Greeter, option: PowerOption) {
   let command = match greeter.powers.options.iter().find(|opt| opt.action == option) {
     None => None,
 
-    Some(Power { command: Some(args), .. }) => {
+    Some(Power {
+      command: Some(args), ..
+    }) => {
       let command = match greeter.power_setsid {
         true => {
           let mut command = Command::new("setsid");

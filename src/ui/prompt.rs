@@ -62,21 +62,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     .split(prompt_rect);
   let (username_rect, answer_rect) = (chunks[0], chunks[2]);
 
-  // Everything above prompt
-  let greeting_rect = Rect::new(
+  let below_prompt = Rect::new(
     greeter.window_padding(),
-    greeter.window_padding() + 2,
+    prompt_container.bottom() + 1,
     size.width - greeter.window_padding() * 2,
-    prompt_container.y - greeter.window_padding(),
+    size.height - prompt_container.bottom() - greeter.window_padding() - 3,
   );
 
-  let greeting = get_greeting(greeter, greeting_rect).style(theme.of(&[Themed::Greet]));
+  let greeting = get_greeting(greeter, below_prompt).style(theme.of(&[Themed::Greet]));
   let greeting_width = greeting.line_width().min(120) as u16;
-  let greeting_height = greeting.line_count(120) as u16;
-
-  // Align just above prompt
-  let [_, greeting_rect] =
-    Layout::vertical(vec![Constraint::Fill(1), Constraint::Length(greeting_height)]).areas(greeting_rect);
 
   // Align to middle
   let [_, greeting_rect, _] = Layout::horizontal(vec![
@@ -84,9 +78,31 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     Constraint::Length(greeting_width),
     Constraint::Fill(1),
   ])
-  .areas(greeting_rect);
+  .areas(below_prompt);
 
   f.render_widget(greeting, greeting_rect);
+
+  let above_prompt = Rect::new(
+    greeter.window_padding(),
+    greeter.window_padding(),
+    size.width - greeter.window_padding() * 2,
+    prompt_container.y - greeter.window_padding(),
+  );
+
+  let date = get_date(greeter).centered();
+  let figlet_time = get_figlet_time(greeter).centered();
+
+  // Align just above prompt
+  let [_, above_prompt] = Layout::vertical(vec![
+    Constraint::Fill(1),
+    Constraint::Length(figlet_time.line_count(120) as u16 + 1),
+  ])
+  .areas(above_prompt);
+
+  let [date_rect, time_rect] = Layout::vertical(vec![Constraint::Length(1), Constraint::Fill(1)]).areas(above_prompt);
+
+  f.render_widget(date, date_rect);
+  f.render_widget(figlet_time, time_rect);
 
   let username_label = if greeter.user_menu && greeter.username.value.is_empty() {
     let prompt_text = Span::from(fl!("select_user"));
@@ -165,7 +181,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
       if let (Some(message), message_height) = get_message_height(greeter, container_padding, 1) {
         let message = message.alignment(Alignment::Center);
-        let message_rect = Rect::new(x, y + height, width, message_height);
+        let message_rect = Rect::new(x, y + height - 1, width, message_height);
         f.render_widget(message, message_rect);
       }
     }

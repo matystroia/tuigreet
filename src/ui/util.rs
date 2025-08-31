@@ -1,11 +1,14 @@
+use std::borrow::Cow;
+
 use ansi_to_tui::IntoText;
+use chrono::Local;
 use tui::{
   prelude::Rect,
   text::Text,
   widgets::{Paragraph, Wrap},
 };
 
-use crate::{Greeter, Mode};
+use crate::{fortune::get_figlet, Greeter, Mode};
 
 pub fn titleize(message: &str) -> String {
   format!(" {message} ")
@@ -130,11 +133,22 @@ pub fn get_greeting(greeter: &Greeter, area: Rect) -> Paragraph {
   paragraph
 }
 
-pub fn get_message_height(
-  greeter: &Greeter,
-  padding: u16,
-  fallback: u16,
-) -> (Option<Paragraph>, u16) {
+pub fn get_date(greeter: &Greeter) -> Paragraph {
+  let date = Local::now()
+    .format_localized(&Cow::Owned(fl!("date")), greeter.locale)
+    .to_string();
+
+  Paragraph::new(date)
+}
+
+pub fn get_figlet_time(greeter: &Greeter) -> Paragraph {
+  let time = Local::now().format_localized("%H:%M", greeter.locale).to_string();
+  let figlet = get_figlet(&time);
+
+  Paragraph::new(figlet)
+}
+
+pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
   if let Some(message) = &greeter.message {
     let width = greeter.width();
     let paragraph = Paragraph::new(message.trim_end()).wrap(Wrap { trim: true });

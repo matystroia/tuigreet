@@ -9,10 +9,7 @@ use std::{
   sync::Arc,
 };
 
-use chrono::{
-  format::{Item, StrftimeItems},
-  Locale,
-};
+use chrono::Locale;
 use getopts::{Matches, Options};
 use i18n_embed::DesktopLanguageRequester;
 use tokio::{
@@ -25,8 +22,8 @@ use zeroize::Zeroize;
 use crate::{
   event::Event,
   info::{
-    get_issue, get_last_command, get_last_session_path, get_last_user_command, get_last_user_name, get_last_user_session,
-    get_last_user_username, get_min_max_uids, get_sessions, get_users,
+    get_issue, get_last_command, get_last_session_path, get_last_user_command, get_last_user_name,
+    get_last_user_session, get_last_user_username, get_min_max_uids, get_sessions, get_users,
   },
   power::PowerOption,
   ui::{
@@ -162,10 +159,6 @@ pub struct Greeter {
 
   // Style object for the terminal UI
   pub theme: Theme,
-  // Display the current time
-  pub time: bool,
-  // Time format
-  pub time_format: Option<String>,
   // Greeting message (MOTD) to use to welcome the user.
   pub greeting: Option<String>,
   // Transaction message to show to the user.
@@ -454,19 +447,35 @@ impl Greeter {
       "'CMD [ARGS]...'",
     );
     opts.optopt("x", "xsessions", "colon-separated list of X11 session paths", "DIRS");
-    opts.optopt("", "xsession-wrapper", xsession_wrapper_desc.as_str(), "'CMD [ARGS]...'");
+    opts.optopt(
+      "",
+      "xsession-wrapper",
+      xsession_wrapper_desc.as_str(),
+      "'CMD [ARGS]...'",
+    );
     opts.optflag("", "no-xsession-wrapper", "do not wrap commands for X11 sessions");
     opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
-    opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
-    opts.optflag("t", "time", "display the current date and time");
-    opts.optopt("", "time-format", "custom strftime format for displaying date and time", "FORMAT");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
-    opts.optflag("", "remember-user-session", "remember last selected session for each user");
+    opts.optflag(
+      "",
+      "remember-user-session",
+      "remember last selected session for each user",
+    );
     opts.optflag("", "user-menu", "allow graphical selection of users from a menu");
-    opts.optopt("", "user-menu-min-uid", "minimum UID to display in the user selection menu", "UID");
-    opts.optopt("", "user-menu-max-uid", "maximum UID to display in the user selection menu", "UID");
+    opts.optopt(
+      "",
+      "user-menu-min-uid",
+      "minimum UID to display in the user selection menu",
+      "UID",
+    );
+    opts.optopt(
+      "",
+      "user-menu-max-uid",
+      "maximum UID to display in the user selection menu",
+      "UID",
+    );
     opts.optopt("", "theme", "define the application theme colors", "THEME");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt(
@@ -475,17 +484,37 @@ impl Greeter {
       "characters to be used to redact secrets (default: *)",
       "CHARS",
     );
-    opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
+    opts.optopt(
+      "",
+      "window-padding",
+      "padding inside the terminal area (default: 0)",
+      "PADDING",
+    );
     opts.optopt(
       "",
       "container-padding",
       "padding inside the main prompt container (default: 1)",
       "PADDING",
     );
-    opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
+    opts.optopt(
+      "",
+      "prompt-padding",
+      "padding between prompt rows (default: 1)",
+      "PADDING",
+    );
 
-    opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
-    opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
+    opts.optopt(
+      "",
+      "power-shutdown",
+      "command to run to shut down the system",
+      "'CMD [ARGS]...'",
+    );
+    opts.optopt(
+      "",
+      "power-reboot",
+      "command to run to reboot the system",
+      "'CMD [ARGS]...'",
+    );
     opts.optflag("", "power-no-setsid", "do not prefix power commands with setsid");
 
     opts.optopt("", "kb-command", "F-key to use to open the command menu", "[1-12]");
@@ -526,10 +555,6 @@ impl Greeter {
       }
     }
 
-    if self.config().opt_present("issue") && self.config().opt_present("greeting") {
-      return Err("Only one of --issue and --greeting may be used at the same time".into());
-    }
-
     if self.config().opt_present("theme") {
       if let Some(spec) = self.config().opt_str("theme") {
         self.theme = Theme::parse(spec.as_str());
@@ -550,21 +575,17 @@ impl Greeter {
       self.secret_display = SecretDisplay::Character(asterisk);
     }
 
-    self.time = self.config().opt_present("time");
-
-    if let Some(format) = self.config().opt_str("time-format") {
-      if StrftimeItems::new(&format).any(|item| item == Item::Error) {
-        return Err("Invalid strftime format provided in --time-format".into());
-      }
-
-      self.time_format = Some(format);
-    }
-
     if self.config().opt_present("user-menu") {
       self.user_menu = true;
 
-      let min_uid = self.config().opt_str("user-menu-min-uid").and_then(|uid| uid.parse::<u16>().ok());
-      let max_uid = self.config().opt_str("user-menu-max-uid").and_then(|uid| uid.parse::<u16>().ok());
+      let min_uid = self
+        .config()
+        .opt_str("user-menu-min-uid")
+        .and_then(|uid| uid.parse::<u16>().ok());
+      let max_uid = self
+        .config()
+        .opt_str("user-menu-max-uid")
+        .and_then(|uid| uid.parse::<u16>().ok());
       let (min_uid, max_uid) = get_min_max_uids(min_uid, max_uid);
 
       tracing::info!("min/max UIDs are {}/{}", min_uid, max_uid);
@@ -592,7 +613,6 @@ impl Greeter {
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
     self.remember_user_session = self.config().opt_present("remember-user-session");
-    self.greeting = self.option("greeting");
 
     // If the `--cmd` argument is provided, it will override the selected session.
     if let Some(command) = self.option("cmd") {

@@ -8,7 +8,10 @@ use tokio::sync::{
 
 use crate::{
   event::Event,
-  info::{delete_last_user_command, delete_last_user_session, write_last_user_command, write_last_user_session, write_last_username},
+  info::{
+    delete_last_user_command, delete_last_user_session, write_last_user_command, write_last_user_session,
+    write_last_username,
+  },
   macros::SafeDebug,
   ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
@@ -76,7 +79,10 @@ impl Ipc {
     }
 
     match response {
-      Response::AuthMessage { auth_message_type, auth_message } => match auth_message_type {
+      Response::AuthMessage {
+        auth_message_type,
+        auth_message,
+      } => match auth_message_type {
         AuthMessageType::Secret => {
           greeter.mode = Mode::Password;
           greeter.working = false;
@@ -133,7 +139,11 @@ impl Ipc {
                 }
 
                 SessionSource::Session(index) => {
-                  if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
+                  if let Some(Session {
+                    path: Some(session_path),
+                    ..
+                  }) = greeter.sessions.options.get(index)
+                  {
                     tracing::info!("caching last user session: {session_path:?}");
 
                     write_last_user_session(&greeter.username.value, session_path);
@@ -176,13 +186,23 @@ impl Ipc {
               let (command, env) = wrap_session_command(greeter, session, &default);
 
               #[cfg(not(debug_assertions))]
-              self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
+              self
+                .send(Request::StartSession {
+                  cmd: vec![command.to_string()],
+                  env,
+                })
+                .await;
 
               #[cfg(debug_assertions)]
               {
                 let _ = command;
 
-                self.send(Request::StartSession { cmd: vec!["true".to_string()], env }).await;
+                self
+                  .send(Request::StartSession {
+                    cmd: vec!["true".to_string()],
+                    env,
+                  })
+                  .await;
               }
             }
           }

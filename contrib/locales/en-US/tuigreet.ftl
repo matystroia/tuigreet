@@ -8,7 +8,7 @@ action_command = Command
 action_session = Session
 action_power = Power
 
-date = %a, %d %h %Y - %H:%M
+date = %a, %d %h %Y
 
 select_user = Press Enter to select a user or start typing...
 username = Username:

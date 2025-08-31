@@ -175,7 +175,11 @@ fn init_logger(greeter: &Greeter) -> Option<WorkerGuard> {
       let target = Targets::new().with_target("tuigreet", LevelFilter::DEBUG);
 
       tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_writer(appender).with_line_number(true))
+        .with(
+          tracing_subscriber::fmt::layer()
+            .with_writer(appender)
+            .with_line_number(true),
+        )
         .with(target)
         .init();
 

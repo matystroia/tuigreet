@@ -6,7 +6,10 @@ use tokio::sync::RwLock;
 
 use crate::{
   fortune::get_fortune,
-  info::{delete_last_command, delete_last_session, get_last_user_command, get_last_user_session, write_last_command, write_last_session_path},
+  info::{
+    delete_last_command, delete_last_session, get_last_user_command, get_last_user_session, write_last_command,
+    write_last_session_path,
+  },
   ipc::Ipc,
   power::power,
   ui::{
@@ -84,7 +87,9 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // F2 will display the command entry prompt. If we are already in one of the
     // popup screens, we set the previous screen as being the current previous
     // screen.
-    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_command => {
+    KeyEvent {
+      code: KeyCode::F(i), ..
+    } if i == greeter.kb_command => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
         _ => greeter.mode,
@@ -92,7 +97,11 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
 
       // Set the edition buffer to the current command.
       greeter.previous_buffer = Some(greeter.buffer.clone());
-      greeter.buffer = greeter.session_source.command(&greeter).map(str::to_string).unwrap_or_default();
+      greeter.buffer = greeter
+        .session_source
+        .command(&greeter)
+        .map(str::to_string)
+        .unwrap_or_default();
       greeter.cursor_offset = 0;
       greeter.mode = Mode::Command;
     }
@@ -100,7 +109,9 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // F3 will display the session selection menu. If we are already in one of
     // the popup screens, we set the previous screen as being the current
     // previous screen.
-    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_sessions => {
+    KeyEvent {
+      code: KeyCode::F(i), ..
+    } if i == greeter.kb_sessions => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
         _ => greeter.mode,
@@ -109,12 +120,19 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       greeter.mode = Mode::Sessions;
     }
 
-    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_fortune => greeter.fortune = get_fortune(),
+    KeyEvent {
+      code: KeyCode::F(i), ..
+    } if i == greeter.kb_fortune => {
+      greeter.fortune = get_fortune();
+      greeter.clear_request = true;
+    }
 
     // F12 will display the user selection menu. If we are already in one of the
     // popup screens, we set the previous screen as being the current previous
     // screen.
-    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_power => {
+    KeyEvent {
+      code: KeyCode::F(i), ..
+    } if i == greeter.kb_power => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
         _ => greeter.mode,
@@ -124,7 +142,10 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     }
 
     // Handle moving up in menus.
-    KeyEvent { code: KeyCode::Up, .. } => {
+    KeyEvent {
+      code: KeyCode::Char('k'),
+      ..
+    } => {
       if let Mode::Users = greeter.mode {
         if greeter.users.selected > 0 {
           greeter.users.selected -= 1;
@@ -145,7 +166,10 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     }
 
     // Handle moving down in menus.
-    KeyEvent { code: KeyCode::Down, .. } => {
+    KeyEvent {
+      code: KeyCode::Char('j'),
+      ..
+    } => {
       if let Mode::Users = greeter.mode {
         if greeter.users.selected < greeter.users.options.len() - 1 {
           greeter.users.selected += 1;
@@ -195,7 +219,9 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     },
 
     // Enter validates the current entry, depending on the active mode.
-    KeyEvent { code: KeyCode::Enter, .. } => match greeter.mode {
+    KeyEvent {
+      code: KeyCode::Enter, ..
+    } => match greeter.mode {
       Mode::Username if !greeter.username.value.is_empty() => validate_username(&mut greeter, &ipc).await,
 
       Mode::Username if greeter.user_menu => {
@@ -279,13 +305,24 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     },
 
     // Do not handle any other controls keybindings
-    KeyEvent { modifiers: KeyModifiers::CONTROL, .. } => {}
+    KeyEvent {
+      modifiers: KeyModifiers::CONTROL,
+      ..
+    } => {}
 
     // Handle free-form entry of characters.
-    KeyEvent { code: KeyCode::Char(c), .. } => insert_key(&mut greeter, c).await,
+    KeyEvent {
+      code: KeyCode::Char(c), ..
+    } => insert_key(&mut greeter, c).await,
 
     // Handle deletion of characters.
-    KeyEvent { code: KeyCode::Backspace, .. } | KeyEvent { code: KeyCode::Delete, .. } => delete_key(&mut greeter, input.code).await,
+    KeyEvent {
+      code: KeyCode::Backspace,
+      ..
+    }
+    | KeyEvent {
+      code: KeyCode::Delete, ..
+    } => delete_key(&mut greeter, input.code).await,
 
     _ => {}
   }
@@ -371,7 +408,12 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
       if let Some(last_session) = Session::from_path(greeter, last_session).cloned() {
         tracing::info!("remembered user session is {}", last_session.name);
 
-        greeter.sessions.selected = greeter.sessions.options.iter().position(|sess| sess.path == last_session.path).unwrap_or(0);
+        greeter.sessions.selected = greeter
+          .sessions
+          .options
+          .iter()
+          .position(|sess| sess.path == last_session.path)
+          .unwrap_or(0);
         greeter.session_source = SessionSource::Session(greeter.sessions.selected);
       }
     }

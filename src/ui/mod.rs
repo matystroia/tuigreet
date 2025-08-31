@@ -9,13 +9,11 @@ pub mod users;
 mod util;
 
 use std::{
-  borrow::Cow,
   error::Error,
   io::{self, Write},
   sync::Arc,
 };
 
-use chrono::prelude::*;
 use sessions::SessionSource;
 use tokio::sync::RwLock;
 use tui::{
@@ -32,8 +30,7 @@ use crate::{info::capslock_status, ui::util::should_hide_cursor, Greeter, Mode};
 use self::common::style::{Theme, Themed};
 pub use self::i18n::MESSAGES;
 
-const TITLEBAR_INDEX: usize = 1;
-const STATUSBAR_INDEX: usize = 3;
+const STATUSBAR_INDEX: usize = 2;
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
@@ -62,7 +59,6 @@ where
       .constraints(
         [
           Constraint::Length(greeter.window_padding()), // Top vertical padding
-          Constraint::Length(1),                        // Date and time
           Constraint::Min(1),                           // Main area
           Constraint::Length(1),                        // Status line
           Constraint::Length(greeter.window_padding()), // Bottom vertical padding
@@ -71,20 +67,18 @@ where
       )
       .split(size);
 
-    if greeter.time {
-      let time_text = Span::from(get_time(&greeter));
-      let time = Paragraph::new(time_text).alignment(Alignment::Center).style(theme.of(&[Themed::Time]));
-
-      f.render_widget(time, chunks[TITLEBAR_INDEX]);
-    }
-
     let session_source_label = match greeter.session_source {
       SessionSource::Session(_) => fl!("status_session"),
       _ => fl!("status_command"),
     };
     let session_source = greeter.session_source.label(&greeter).unwrap_or("-");
 
-    let status_block_size_right = session_source_label.chars().count() as u16 + 1 + session_source.chars().count() as u16 + 1 + fl!("status_caps").chars().count() as u16 + greeter.window_padding();
+    let status_block_size_right = session_source_label.chars().count() as u16
+      + 1
+      + session_source.chars().count() as u16
+      + 1
+      + fl!("status_caps").chars().count() as u16
+      + greeter.window_padding();
     let status_block_size_left = (size.width - greeter.window_padding()) - status_block_size_right;
 
     let status_chunks = Layout::default()
@@ -118,10 +112,14 @@ where
     f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
     let status_right_text = Line::from(
-      vec![status_label(theme, session_source_label), status_value(&greeter, theme, Button::Other, session_source), Span::from(" ")]
-        .into_iter()
-        .chain(capslock_status().then(|| status_label(theme, fl!("status_caps"))))
-        .collect::<Vec<_>>(),
+      vec![
+        status_label(theme, session_source_label),
+        status_value(&greeter, theme, Button::Other, session_source),
+        Span::from(" "),
+      ]
+      .into_iter()
+      .chain(capslock_status().then(|| status_label(theme, fl!("status_caps"))))
+      .collect::<Vec<_>>(),
     );
     let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
 
@@ -148,20 +146,14 @@ where
   Ok(())
 }
 
-fn get_time(greeter: &Greeter) -> String {
-  let format = match &greeter.time_format {
-    Some(format) => Cow::Borrowed(format),
-    None => Cow::Owned(fl!("date")),
-  };
-
-  Local::now().format_localized(&format, greeter.locale).to_string()
-}
-
 fn status_label<'s, S>(theme: &Theme, text: S) -> Span<'s>
 where
   S: Into<String>,
 {
-  Span::styled(text.into(), theme.of(&[Themed::ActionButton]).add_modifier(Modifier::REVERSED))
+  Span::styled(
+    text.into(),
+    theme.of(&[Themed::ActionButton]).add_modifier(Modifier::REVERSED),
+  )
 }
 
 fn status_value<'s, S>(greeter: &Greeter, theme: &Theme, button: Button, text: S) -> Span<'s>
