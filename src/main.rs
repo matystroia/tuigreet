@@ -13,7 +13,12 @@ mod keyboard;
 mod power;
 mod ui;
 
-use std::{error::Error, fs::OpenOptions, io, process, sync::Arc};
+use std::{
+  error::Error,
+  fs::{self, OpenOptions},
+  io, process,
+  sync::Arc,
+};
 
 use crossterm::{
   execute,
@@ -21,6 +26,10 @@ use crossterm::{
 };
 use event::Event;
 use greetd_ipc::Request;
+use nix::{
+  sys::signal::{kill, Signal},
+  unistd::{getpid, Pid},
+};
 use power::PowerPostAction;
 use tokio::sync::RwLock;
 use tracing_appender::non_blocking::WorkerGuard;
@@ -97,6 +106,11 @@ where
     if let Some(status) = greeter.read().await.exit {
       tracing::info!("exiting main loop");
 
+      if let Some(kmscon_pid) = find_kmscon_ancestor(process::id() as i32) {
+        let _ = kill(Pid::from_raw(kmscon_pid), Signal::SIGTERM);
+        let _ = kill(getpid(), Signal::SIGTERM);
+      }
+
       return Err(status.into());
     }
 
@@ -124,6 +138,28 @@ where
   }
 
   Ok(())
+}
+
+fn find_kmscon_ancestor(mut pid: i32) -> Option<i32> {
+  while pid != 1 {
+    if let Ok(comm) = fs::read_to_string(format!("/proc/{}/comm", pid)) {
+      tracing::info!("comm={}, pid={}", comm, pid);
+      if comm.trim() == "kmscon" {
+        return Some(pid);
+      }
+    }
+
+    let status_path = format!("/proc/{}/status", pid);
+    let content = fs::read_to_string(status_path).ok()?;
+    pid = content
+      .lines()
+      .find(|line| line.starts_with("PPid:"))?
+      .split_whitespace()
+      .nth(1)?
+      .parse()
+      .ok()?;
+  }
+  None
 }
 
 async fn exit(greeter: &mut Greeter, status: AuthStatus) {

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, error::Error, sync::Arc};
+use std::{borrow::Cow, error::Error, process, sync::Arc};
 
 use greetd_ipc::{codec::TokioCodec, AuthMessageType, ErrorType, Request, Response};
 use tokio::sync::{
@@ -8,6 +8,7 @@ use tokio::sync::{
 
 use crate::{
   event::Event,
+  find_kmscon_ancestor,
   info::{
     delete_last_user_command, delete_last_user_session, write_last_user_command, write_last_user_session,
     write_last_username,
@@ -209,7 +210,10 @@ impl Ipc {
         }
       }
 
-      Response::Error { error_type, .. } => {
+      Response::Error {
+        error_type,
+        description,
+      } => {
         // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
         tracing::info!("received an error from greetd: {error_type:?}");
 
@@ -227,8 +231,7 @@ impl Ipc {
           }
 
           ErrorType::Error => {
-            // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
-            greeter.message = Some("An error was received from greetd".to_string());
+            greeter.message = Some(description);
             greeter.reset(false).await;
           }
         }
@@ -301,9 +304,17 @@ fn wrap_session_command<'a>(
     }
 
     _ => {
+      let mut session_wrapper = None;
+      if find_kmscon_ancestor(process::id() as i32).is_some() {
+        session_wrapper = Some(format!(
+          "sudo kmscon --vt 1 --login -- /usr/local/bin/kmstrap.sh su -l {} -c",
+          greeter.username.value,
+        ));
+      }
+
       // If a wrapper script is used, assume that it is able to set up the
       // required environment.
-      if let Some(ref wrap) = greeter.session_wrapper {
+      if let Some(ref wrap) = session_wrapper {
         return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
       }
       // Otherwise, set up the environment from the provided argument.

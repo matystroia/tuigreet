@@ -22,7 +22,7 @@ i18n-embed = { version = "^0.14", features = [
 ] }
 i18n-embed-fl = "^0.8"
 lazy_static = "^1.4"
-nix = { version = "^0.28", features = ["feature"] }
+nix = { version = "^0.28", features = ["feature", "signal", "process"] }
 tui = { package = "ratatui", version = "^0.27", default-features = false, features = [
   "crossterm",
   "unstable"

@@ -43,7 +43,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     .title_style(theme.of(&[Themed::Title]))
     .style(theme.of(&[Themed::Container]))
     .borders(Borders::ALL)
-    .border_type(BorderType::Plain)
+    .border_type(BorderType::Rounded)
     .border_style(theme.of(&[Themed::Border]));
 
   f.render_widget(prompt_block, prompt_container);
@@ -95,11 +95,12 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   // Align just above prompt
   let [_, above_prompt] = Layout::vertical(vec![
     Constraint::Fill(1),
-    Constraint::Length(figlet_time.line_count(120) as u16 + 1),
+    Constraint::Length(figlet_time.line_count(120) as u16 + 2),
   ])
   .areas(above_prompt);
 
-  let [date_rect, time_rect] = Layout::vertical(vec![Constraint::Length(1), Constraint::Fill(1)]).areas(above_prompt);
+  let [date_rect, _, time_rect] =
+    Layout::vertical(vec![Constraint::Length(1), Constraint::Length(1), Constraint::Fill(1)]).areas(above_prompt);
 
   f.render_widget(date, date_rect);
   f.render_widget(figlet_time, time_rect);

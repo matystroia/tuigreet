@@ -314,6 +314,12 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       _ => {}
     },
 
+    KeyEvent {
+      code: KeyCode::Char('h'),
+      modifiers: KeyModifiers::CONTROL,
+      ..
+    } => delete_key(&mut greeter, KeyCode::Backspace).await,
+
     // Do not handle any other controls keybindings
     KeyEvent {
       modifiers: KeyModifiers::CONTROL,
