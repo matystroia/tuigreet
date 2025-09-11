@@ -119,7 +119,7 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
 }
 
 pub fn get_greeting(greeter: &Greeter, area: Rect) -> Paragraph {
-  let fortune_text = match greeter.fortune.into_text() {
+  let fortune_text = match greeter.fortune.replace('\t', "    ").into_text() {
     Ok(text) => text,
     Err(_) => Text::raw(&greeter.fortune),
   };
